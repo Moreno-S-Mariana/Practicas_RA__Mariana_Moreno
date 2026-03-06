@@ -1,7 +1,16 @@
 {
   "Version": 1,
   "WorkspaceRootPath": "C:\\Users\\Mariana\\Documents\\GitHub\\Realidad Aumentada\\Clase_Vuforia\\",
-  "Documents": [],
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\Mariana\\Documents\\GitHub\\Realidad Aumentada\\Clase_Vuforia\\Assets\\Scripts\\ChangeColor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Assets\\Scripts\\ChangeColor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\Mariana\\Documents\\GitHub\\Realidad Aumentada\\Clase_Vuforia\\Assets\\Scripts\\NewBehaviourScript.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Assets\\Scripts\\NewBehaviourScript.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
@@ -9,7 +18,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": -1,
+          "SelectedChildIndex": 3,
           "Children": [
             {
               "$type": "Bookmark",
@@ -22,6 +31,30 @@
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{34e76e81-ee4a-11d0-ae2e-00a0c90fffc3}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "ChangeColor.cs",
+              "DocumentMoniker": "C:\\Users\\Mariana\\Documents\\GitHub\\Realidad Aumentada\\Clase_Vuforia\\Assets\\Scripts\\ChangeColor.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\ChangeColor.cs",
+              "ToolTip": "C:\\Users\\Mariana\\Documents\\GitHub\\Realidad Aumentada\\Clase_Vuforia\\Assets\\Scripts\\ChangeColor.cs",
+              "RelativeToolTip": "Assets\\Scripts\\ChangeColor.cs",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAAACEAAAAoAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-04T03:09:58.85Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "NewBehaviourScript.cs",
+              "DocumentMoniker": "C:\\Users\\Mariana\\Documents\\GitHub\\Realidad Aumentada\\Clase_Vuforia\\Assets\\Scripts\\NewBehaviourScript.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\NewBehaviourScript.cs",
+              "ToolTip": "C:\\Users\\Mariana\\Documents\\GitHub\\Realidad Aumentada\\Clase_Vuforia\\Assets\\Scripts\\NewBehaviourScript.cs",
+              "RelativeToolTip": "Assets\\Scripts\\NewBehaviourScript.cs",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-04T03:09:16.855Z"
             }
           ]
         },
