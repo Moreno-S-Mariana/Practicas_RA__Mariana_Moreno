@@ -3,14 +3,14 @@ using UnityEngine;
 
 public class CustomizationSystem : MonoBehaviour
 {
-    [Header("COLOR")]
+    [Header("COLOR")] // SE USA COMO BASE LA VARIABLE COLOR DEL EJERCICIO P02 PARA GUARDAR EL COLOR ACTUAL
     public Color color = Color.white;
 
-    [Header("ACCESORIOS")]
+    [Header("ACCESORIOS")]// SE USA COMO BASE EL ARRAY DE ACCESORIOS 
     public GameObject[] accessories;
     private int currentAccessory = -1;
 
-    [Header("OUTFITS")]
+    [Header("OUTFITS")]// SE USA COMO BASE EL ARRAY DE OUTFITS
     public GameObject[] outfits;
     private int currentOutfit = -1;
 
@@ -21,10 +21,9 @@ public class CustomizationSystem : MonoBehaviour
         DeactivateAllOutfits();
     }
 
-    // =========================
-    // BOTON COLOR
-    // Activa SOLO accessories[1] y le cambia el color solo a ese
-    // =========================
+    //FUNCION PARA HACER EL CAMBIO DE COLOR 
+     // SE USA COMO BASE LA FUNCION DEL EJERCICIO P02 
+     // SE MODIFICA QUE SOLO SE CAMBIE EL ACCESORIO 1 YAS QUE TIENE UNICAMENTE UN SOLO MATERIAL
     public void ChangeColor_BTN()
     {
         // validar que exista el accesorio 1
@@ -32,10 +31,12 @@ public class CustomizationSystem : MonoBehaviour
             return;
 
         // apagar todos los outfits
+        //EVITAMOS QUE POUTFITS CON OUTFITS SE MEZCLEN Y SOLO SE ACTIVE EL ACCESORIO 1
         DeactivateAllOutfits();
         currentOutfit = -1;
 
         // apagar todos los accesorios
+        //EVITAMOS QUE SE MEZCLEN ACCESORIOS O QUE SE PONGA UN ACCESORIO QUE NO ES 
         DeactivateAllAccessories();
 
         // activar SOLO el accesorio 1
@@ -53,12 +54,11 @@ public class CustomizationSystem : MonoBehaviour
         ApplyColorToObject(accessories[currentAccessory], color);
     }
 
-    // =========================
-    // BOTON ACCESORIO
-    // =========================
+    // FUNCION PARA HACER EL CAMBIO DE ACCESORIO 
+    // SE MODIFICA QUE SOLO SE CAMBIE EL ACCESORIO Y QUE SE APAGUEN LOS OUTFITS PARA EVITAR MEZCLAS
     public void ChangeAccessory_BTN()
     {
-        if (accessories == null || accessories.Length == 0)
+        if (accessories == null || accessories.Length == 0) 
             return;
 
         // apagar todos los outfits
@@ -69,6 +69,7 @@ public class CustomizationSystem : MonoBehaviour
         DeactivateAllAccessories();
 
         // elegir accesorio nuevo sin repetir el actual
+        //EVITAMOS REPETICIONES DE ACCESORIO O QUE QUEDE PERMANENTEMENTE EL MISMO ACCESORIO ACTIVADO
         int newAccessory = GetRandomDifferentIndex(accessories.Length, currentAccessory);
 
         if (newAccessory < 0 || accessories[newAccessory] == null)
@@ -77,19 +78,19 @@ public class CustomizationSystem : MonoBehaviour
         currentAccessory = newAccessory;
         accessories[currentAccessory].SetActive(true);
 
+        //FUNCION OPCIONAL PARA CAMBIAR EL COLOR DEL ACCESORIO ACTIVADO
         // cambiar color automáticamente al accesorio activado
-        color = new Color(
+        /*color = new Color(
             UnityEngine.Random.value,
             UnityEngine.Random.value,
             UnityEngine.Random.value
         );
 
-        ApplyColorToObject(accessories[currentAccessory], color);
+        ApplyColorToObject(accessories[currentAccessory], color);*/
     }
 
-    // =========================
-    // BOTON OUTFIT
-    // =========================
+    // FUNCION PARA HACER EL CAMBIO DE OUTFIT
+    // SE MODIFICA QUE SOLO SE CAMBIE EL OUTFIT Y QUE SE APAGUEN LOS ACCESORIOS PARA EVITAR MEZCLAS
     public void ChangeOutfit_BTN()
     {
         if (outfits == null || outfits.Length == 0)
@@ -112,9 +113,12 @@ public class CustomizationSystem : MonoBehaviour
         outfits[currentOutfit].SetActive(true);
     }
 
-    // =========================
-    // METODOS AUXILIARES
-    // =========================
+    /***********************************************************************************/
+    // FUNCIONES AUXILIARES PARA APAGAR ACCESORIOS Y OUTFITS, OBTENER UN INDICE ALEATORIO DIFERENTE, Y APLICAR COLOR A UN OBJETO    
+    /***********************************************************************************/
+
+    // Función para apagar todos los accesorios
+    //evita que se generen confusiones o mezclas de accesorios al activar uno nuevo
     private void DeactivateAllAccessories()
     {
         if (accessories == null) return;
@@ -125,7 +129,7 @@ public class CustomizationSystem : MonoBehaviour
                 accessories[i].SetActive(false);
         }
     }
-
+    // Función para apagar todos los outfits
     private void DeactivateAllOutfits()
     {
         if (outfits == null) return;
@@ -136,7 +140,7 @@ public class CustomizationSystem : MonoBehaviour
                 outfits[i].SetActive(false);
         }
     }
-
+    // Función para obtener un índice aleatorio diferente al actual Y EVITAR QUE SE ESTANQUE EN UN SOLO ACCESORIO O VESTUARIO 
     private int GetRandomDifferentIndex(int length, int currentIndex)
     {
         if (length <= 0)
@@ -154,7 +158,7 @@ public class CustomizationSystem : MonoBehaviour
 
         return newIndex;
     }
-
+    //FUNCION PARA RENDEREAR EL COLOR EN LOS ACCESORIOS P02
     private void ApplyColorToObject(GameObject obj, Color newColor)
     {
         if (obj == null) return;

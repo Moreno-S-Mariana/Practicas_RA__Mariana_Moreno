@@ -22,15 +22,15 @@
           "Children": [
             {
               "$type": "Bookmark",
-              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
-            },
-            {
-              "$type": "Bookmark",
               "Name": "ST:128:0:{75188d03-9892-4ae2-abf1-207126247ce5}"
             },
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{34e76e81-ee4a-11d0-ae2e-00a0c90fffc3}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
             },
             {
               "$type": "Document",
@@ -40,7 +40,7 @@
               "RelativeDocumentMoniker": "Assets\\Scripts\\ChangeColor.cs",
               "ToolTip": "C:\\Users\\Mariana\\Documents\\GitHub\\Realidad Aumentada\\Clase_Vuforia\\Assets\\Scripts\\ChangeColor.cs",
               "RelativeToolTip": "Assets\\Scripts\\ChangeColor.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABoAAABoAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACEAAAAoAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-03-04T03:09:58.85Z",
               "EditorCaption": ""
