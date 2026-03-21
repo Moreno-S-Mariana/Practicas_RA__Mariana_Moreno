@@ -1,7 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <QCARConfig>
   <Tracking>
+    <ImageTarget name="target05perry_scaled" size="1.000000 1.501466" />
+    <ImageTarget name="target04fury_scaled" size="1.000000 1.501466" />
+    <ImageTarget name="target03pain_scaled" size="1.000000 1.501466" />
+    <ImageTarget name="target01mm_scaled" size="1.000000 1.501466" />
+    <ImageTarget name="target02panic_scaled" size="1.000000 1.501466" />
+    <ImageTarget name="target02panic" size="1024.000000 1537.501465" />
+    <ImageTarget name="target05perry" size="1024.000000 1536.375122" />
+    <ImageTarget name="target04fury" size="1024.000000 1536.375122" />
+    <ImageTarget name="target03pain" size="1024.000000 1536.375122" />
+    <ImageTarget name="target01mm" size="1024.000000 1536.375122" />
     <ImageTarget name="perryintento2" size="1.000000 1.134118" />
-    <ImageTarget name="perry" size="1.000000 1.000000" />
   </Tracking>
 </QCARConfig>

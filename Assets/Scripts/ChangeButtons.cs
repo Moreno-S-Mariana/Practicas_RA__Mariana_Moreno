@@ -14,6 +14,26 @@ public class CustomizationSystem : MonoBehaviour
     public GameObject[] outfits;
     private int currentOutfit = -1;
 
+    [Header("ANIMATOR ACCESORIOS")]
+    [SerializeField] private Animator characterAnimator;
+    [SerializeField] private string accessoryIdParam = "AccesoryId";
+
+    [Header("CONTROL ANIMACION ACCESORIOS")]
+    [SerializeField] private string accessoryChangeTrigger = "AccesoryChange";
+    [SerializeField] private bool waitForButtonToAssignId = true;
+    private bool accessoryButtonPressed = false;
+
+    [Header("ANIMATOR OUTFITS")]
+    [SerializeField] private string outfitIdParam = "OutfitId"; 
+
+    [Header("CONTROL ANIMACION OUTFITS")]
+    [SerializeField] private string outfitChangeTrigger = "OutfitChange";
+    [SerializeField] private bool waitForButtonToAssignOutfitId = true;
+    private bool outfitButtonPressed = false;
+
+    [Header("ANIMATOR IDDLE")]
+    [SerializeField] private string idleStateName = "PerryIddle";
+
     void Start()
     {
         // Apagar todo al iniciar
@@ -22,8 +42,8 @@ public class CustomizationSystem : MonoBehaviour
     }
 
     //FUNCION PARA HACER EL CAMBIO DE COLOR 
-     // SE USA COMO BASE LA FUNCION DEL EJERCICIO P02 
-     // SE MODIFICA QUE SOLO SE CAMBIE EL ACCESORIO 1 YAS QUE TIENE UNICAMENTE UN SOLO MATERIAL
+    // SE USA COMO BASE LA FUNCION DEL EJERCICIO P02 
+    // SE MODIFICA QUE SOLO SE CAMBIE EL ACCESORIO 1 YAS QUE TIENE UNICAMENTE UN SOLO MATERIAL
     public void ChangeColor_BTN()
     {
         // validar que exista el accesorio 1
@@ -52,13 +72,17 @@ public class CustomizationSystem : MonoBehaviour
 
         // cambiar color SOLO del accesorio 1
         ApplyColorToObject(accessories[currentAccessory], color);
+
+        ForceIdleAnimation();
     }
 
     // FUNCION PARA HACER EL CAMBIO DE ACCESORIO 
     // SE MODIFICA QUE SOLO SE CAMBIE EL ACCESORIO Y QUE SE APAGUEN LOS OUTFITS PARA EVITAR MEZCLAS
     public void ChangeAccessory_BTN()
     {
-        if (accessories == null || accessories.Length == 0) 
+        accessoryButtonPressed = true;
+
+        if (accessories == null || accessories.Length == 0)
             return;
 
         // apagar todos los outfits
@@ -78,6 +102,8 @@ public class CustomizationSystem : MonoBehaviour
         currentAccessory = newAccessory;
         accessories[currentAccessory].SetActive(true);
 
+        ApplyAccessoryAnimation(currentAccessory);
+
         //FUNCION OPCIONAL PARA CAMBIAR EL COLOR DEL ACCESORIO ACTIVADO
         // cambiar color automáticamente al accesorio activado
         /*color = new Color(
@@ -93,6 +119,8 @@ public class CustomizationSystem : MonoBehaviour
     // SE MODIFICA QUE SOLO SE CAMBIE EL OUTFIT Y QUE SE APAGUEN LOS ACCESORIOS PARA EVITAR MEZCLAS
     public void ChangeOutfit_BTN()
     {
+        outfitButtonPressed = true;
+
         if (outfits == null || outfits.Length == 0)
             return;
 
@@ -111,11 +139,46 @@ public class CustomizationSystem : MonoBehaviour
 
         currentOutfit = newOutfit;
         outfits[currentOutfit].SetActive(true);
+
+        ApplyOutfitAnimation(currentOutfit);
     }
 
     /***********************************************************************************/
     // FUNCIONES AUXILIARES PARA APAGAR ACCESORIOS Y OUTFITS, OBTENER UN INDICE ALEATORIO DIFERENTE, Y APLICAR COLOR A UN OBJETO    
     /***********************************************************************************/
+
+    private void ApplyAccessoryAnimation(int accessoryIndex)
+    {
+        if (characterAnimator == null) return;
+        if (accessoryIndex < 0) return;
+
+        if (waitForButtonToAssignId && !accessoryButtonPressed) return;
+
+        characterAnimator.SetInteger(accessoryIdParam, accessoryIndex);
+        characterAnimator.SetTrigger(accessoryChangeTrigger);
+    }
+
+    private void ApplyOutfitAnimation(int outfitIndex)
+    {
+        if (characterAnimator == null) return;
+        if (outfitIndex < 0) return;
+
+        if (waitForButtonToAssignOutfitId && !outfitButtonPressed) return;
+
+        characterAnimator.SetInteger(outfitIdParam, outfitIndex);
+        characterAnimator.SetTrigger(outfitChangeTrigger);
+    }
+
+    private void ForceIdleAnimation()
+    {
+        if (characterAnimator == null) return;
+
+        characterAnimator.ResetTrigger(accessoryChangeTrigger);
+        characterAnimator.ResetTrigger(outfitChangeTrigger);
+
+        if (!string.IsNullOrEmpty(idleStateName))
+            characterAnimator.Play(idleStateName, 0, 0f);
+    }
 
     // Función para apagar todos los accesorios
     //evita que se generen confusiones o mezclas de accesorios al activar uno nuevo
