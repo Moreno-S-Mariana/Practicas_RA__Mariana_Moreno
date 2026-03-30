@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 public class CustomizationSystem : MonoBehaviour
@@ -6,11 +5,11 @@ public class CustomizationSystem : MonoBehaviour
     [Header("COLOR")] // SE USA COMO BASE LA VARIABLE COLOR DEL EJERCICIO P02 PARA GUARDAR EL COLOR ACTUAL
     public Color color = Color.white;
 
-    [Header("ACCESORIOS")]// SE USA COMO BASE EL ARRAY DE ACCESORIOS 
+    [Header("ACCESORIOS")] // SE USA COMO BASE EL ARRAY DE ACCESORIOS
     public GameObject[] accessories;
     private int currentAccessory = -1;
 
-    [Header("OUTFITS")]// SE USA COMO BASE EL ARRAY DE OUTFITS
+    [Header("OUTFITS")] // SE USA COMO BASE EL ARRAY DE OUTFITS
     public GameObject[] outfits;
     private int currentOutfit = -1;
 
@@ -24,7 +23,7 @@ public class CustomizationSystem : MonoBehaviour
     private bool accessoryButtonPressed = false;
 
     [Header("ANIMATOR OUTFITS")]
-    [SerializeField] private string outfitIdParam = "OutfitId"; 
+    [SerializeField] private string outfitIdParam = "OutfitId";
 
     [Header("CONTROL ANIMACION OUTFITS")]
     [SerializeField] private string outfitChangeTrigger = "OutfitChange";
@@ -36,48 +35,50 @@ public class CustomizationSystem : MonoBehaviour
 
     void Start()
     {
-        // Apagar todo al iniciar
-        DeactivateAllAccessories();
-        DeactivateAllOutfits();
+        // INICIO: SI HAY PERSONALIZACION GUARDADA, SE CARGA Y SE APLICA
+        // SI NO HAY DATOS, SE RESETEA (APAGA ACCESORIOS/OUTFITS) COMO EN EL CODIGO ORIGINAL
+
+        if (CustomizationStorage.HasSaved())
+        {
+            LoadAndApplySavedCustomization();
+        }
+        else
+        {
+            DeactivateAllAccessories();
+            DeactivateAllOutfits();
+        }
     }
 
-    //FUNCION PARA HACER EL CAMBIO DE COLOR 
-    // SE USA COMO BASE LA FUNCION DEL EJERCICIO P02 
-    // SE MODIFICA QUE SOLO SE CAMBIE EL ACCESORIO 1 YAS QUE TIENE UNICAMENTE UN SOLO MATERIAL
+    // CAMBIO DE COLOR (BOTON)
+    // BASE: P02
+    // MOD: SOLO CAMBIA COLOR DEL ACCESORIO ACTIVO (NO FUERZA UN ACCESORIO ESPECIFICO)
     public void ChangeColor_BTN()
     {
-        // validar que exista el accesorio 1
-        if (accessories == null || accessories.Length <= 1 || accessories[1] == null)
-            return;
+        // OPCIONAL: SI QUIERES BLOQUEAR OUTFITS AL CAMBIAR COLOR, DESCOMENTA
+        //DeactivateAllOutfits();
+        //currentOutfit = -1;
 
-        // apagar todos los outfits
-        //EVITAMOS QUE POUTFITS CON OUTFITS SE MEZCLEN Y SOLO SE ACTIVE EL ACCESORIO 1
-        DeactivateAllOutfits();
-        currentOutfit = -1;
+        int activeAccessoryIndex = GetActiveAccessoryIndex();
+        if (activeAccessoryIndex < 0) return;
 
-        // apagar todos los accesorios
-        //EVITAMOS QUE SE MEZCLEN ACCESORIOS O QUE SE PONGA UN ACCESORIO QUE NO ES 
-        DeactivateAllAccessories();
+        currentAccessory = activeAccessoryIndex;
 
-        // activar SOLO el accesorio 1
-        currentAccessory = 1;
-        accessories[currentAccessory].SetActive(true);
-
-        // generar color random
+        // COLOR RANDOM
         color = new Color(
             UnityEngine.Random.value,
             UnityEngine.Random.value,
             UnityEngine.Random.value
         );
 
-        // cambiar color SOLO del accesorio 1
+        // APLICA COLOR SOLO AL ACCESORIO ACTIVO
         ApplyColorToObject(accessories[currentAccessory], color);
 
+        // REGRESA A IDLE PARA EVITAR ESTADOS RAROS EN LA ANIMACION
         ForceIdleAnimation();
     }
 
-    // FUNCION PARA HACER EL CAMBIO DE ACCESORIO 
-    // SE MODIFICA QUE SOLO SE CAMBIE EL ACCESORIO Y QUE SE APAGUEN LOS OUTFITS PARA EVITAR MEZCLAS
+    // CAMBIO DE ACCESORIO (BOTON)
+    // REGLA: APAGA OUTFITS PARA EVITAR MEZCLAS
     public void ChangeAccessory_BTN()
     {
         accessoryButtonPressed = true;
@@ -85,15 +86,14 @@ public class CustomizationSystem : MonoBehaviour
         if (accessories == null || accessories.Length == 0)
             return;
 
-        // apagar todos los outfits
+        // NO MEZCLAR: APAGA OUTFITS
         DeactivateAllOutfits();
         currentOutfit = -1;
 
-        // apagar todos los accesorios
+        // APAGA ACCESORIOS ANTES DE ACTIVAR EL NUEVO
         DeactivateAllAccessories();
 
-        // elegir accesorio nuevo sin repetir el actual
-        //EVITAMOS REPETICIONES DE ACCESORIO O QUE QUEDE PERMANENTEMENTE EL MISMO ACCESORIO ACTIVADO
+        // SELECCIONA ACCESORIO DISTINTO AL ACTUAL (EVITA REPETICION)
         int newAccessory = GetRandomDifferentIndex(accessories.Length, currentAccessory);
 
         if (newAccessory < 0 || accessories[newAccessory] == null)
@@ -102,21 +102,26 @@ public class CustomizationSystem : MonoBehaviour
         currentAccessory = newAccessory;
         accessories[currentAccessory].SetActive(true);
 
+        // DISPARA ANIMACION SEGUN ID
         ApplyAccessoryAnimation(currentAccessory);
 
-        //FUNCION OPCIONAL PARA CAMBIAR EL COLOR DEL ACCESORIO ACTIVADO
-        // cambiar color automáticamente al accesorio activado
-        /*color = new Color(
+        // HEREDA EL COLOR ACTUAL AL NUEVO ACCESORIO
+        ApplyColorToObject(accessories[currentAccessory], color);
+
+        // OPCIONAL: SI QUIERES QUE CADA CAMBIO GENERE UN NUEVO COLOR, USA ESTE BLOQUE
+        /*
+        color = new Color(
             UnityEngine.Random.value,
             UnityEngine.Random.value,
             UnityEngine.Random.value
         );
 
-        ApplyColorToObject(accessories[currentAccessory], color);*/
+        ApplyColorToObject(accessories[currentAccessory], color);
+        */
     }
 
-    // FUNCION PARA HACER EL CAMBIO DE OUTFIT
-    // SE MODIFICA QUE SOLO SE CAMBIE EL OUTFIT Y QUE SE APAGUEN LOS ACCESORIOS PARA EVITAR MEZCLAS
+    // CAMBIO DE OUTFIT (BOTON)
+    // REGLA: APAGA ACCESORIOS PARA EVITAR MEZCLAS
     public void ChangeOutfit_BTN()
     {
         outfitButtonPressed = true;
@@ -124,14 +129,14 @@ public class CustomizationSystem : MonoBehaviour
         if (outfits == null || outfits.Length == 0)
             return;
 
-        // apagar todos los accesorios
+        // NO MEZCLAR: APAGA ACCESORIOS
         DeactivateAllAccessories();
         currentAccessory = -1;
 
-        // apagar todos los outfits
+        // APAGA OUTFITS ANTES DE ACTIVAR EL NUEVO
         DeactivateAllOutfits();
 
-        // elegir outfit nuevo sin repetir el actual
+        // SELECCIONA OUTFIT DISTINTO AL ACTUAL (EVITA REPETICION)
         int newOutfit = GetRandomDifferentIndex(outfits.Length, currentOutfit);
 
         if (newOutfit < 0 || outfits[newOutfit] == null)
@@ -140,35 +145,169 @@ public class CustomizationSystem : MonoBehaviour
         currentOutfit = newOutfit;
         outfits[currentOutfit].SetActive(true);
 
+        // DISPARA ANIMACION SEGUN ID
         ApplyOutfitAnimation(currentOutfit);
     }
 
     /***********************************************************************************/
-    // FUNCIONES AUXILIARES PARA APAGAR ACCESORIOS Y OUTFITS, OBTENER UN INDICE ALEATORIO DIFERENTE, Y APLICAR COLOR A UN OBJETO    
+    // GUARDAR / CARGAR PERSONALIZACION ENTRE ESCENAS
     /***********************************************************************************/
 
+    // GUARDAR PERSONALIZACION (BOTON)
+    // USO: LLAMAR ANTES DE CAMBIAR DE ESCENA (CONFIRMAR / MENU / PLAY)
+    public void SaveCustomization_BTN()
+    {
+        // DETECTA QUE ESTA ACTIVO
+        int accessoryIndex = GetActiveAccessoryIndex();
+        int outfitIndex = GetActiveOutfitIndex();
+
+        // CREA DATA
+        CustomizationData data = new CustomizationData
+        {
+            accessoryIndex = accessoryIndex,
+            outfitIndex = outfitIndex,
+            color = color
+        };
+
+        // GUARDA EN PLAYERPREFS (JSON)
+        CustomizationStorage.Save(data);
+    }
+
+    // CARGAR Y APLICAR PERSONALIZACION GUARDADA
+    // USO: Start() O CUANDO ENTRES A UNA ESCENA NUEVA
+    public void LoadAndApplySavedCustomization()
+    {
+        CustomizationData data = CustomizationStorage.LoadOrDefault();
+        ApplyCustomizationData(data);
+    }
+
+    // APLICA LOS DATOS GUARDADOS AL PERSONAJE
+    // REGLA: OUTFIT TIENE PRIORIDAD PARA MANTENER "NO MEZCLAR"
+    private void ApplyCustomizationData(CustomizationData data)
+    {
+        // LIMPIA ESTADO
+        DeactivateAllAccessories();
+        DeactivateAllOutfits();
+
+        currentAccessory = -1;
+        currentOutfit = -1;
+
+        // RESTAURA COLOR
+        color = data.color;
+
+        // PRIORIDAD: OUTFIT
+        if (data.outfitIndex >= 0 &&
+            outfits != null &&
+            data.outfitIndex < outfits.Length &&
+            outfits[data.outfitIndex] != null)
+        {
+            currentOutfit = data.outfitIndex;
+            outfits[currentOutfit].SetActive(true);
+
+            // PERMITE ANIMACION AUNQUE NO VENGA DE BOTON
+            outfitButtonPressed = true;
+            ApplyOutfitAnimation(currentOutfit);
+
+            return;
+        }
+
+        // SI NO HAY OUTFIT, APLICA ACCESORIO
+        if (data.accessoryIndex >= 0 &&
+            accessories != null &&
+            data.accessoryIndex < accessories.Length &&
+            accessories[data.accessoryIndex] != null)
+        {
+            currentAccessory = data.accessoryIndex;
+            accessories[currentAccessory].SetActive(true);
+
+            // PERMITE ANIMACION AUNQUE NO VENGA DE BOTON
+            accessoryButtonPressed = true;
+            ApplyAccessoryAnimation(currentAccessory);
+
+            // APLICA COLOR GUARDADO
+            ApplyColorToObject(accessories[currentAccessory], color);
+        }
+    }
+
+    /***********************************************************************************/
+    // AUXILIARES (ESTADO ACTIVO / APAGAR TODO / RANDOM DIFERENTE / COLOR)
+    /***********************************************************************************/
+
+    // OBTIENE INDICE DEL ACCESORIO ACTIVO
+    private int GetActiveAccessoryIndex()
+    {
+        if (accessories == null) return -1;
+
+        // PRIORIZA currentAccessory SI SIGUE ACTIVO
+        if (currentAccessory >= 0 &&
+            currentAccessory < accessories.Length &&
+            accessories[currentAccessory] != null &&
+            accessories[currentAccessory].activeInHierarchy)
+        {
+            return currentAccessory;
+        }
+
+        // SI NO, BUSCA EL PRIMERO ACTIVO
+        for (int i = 0; i < accessories.Length; i++)
+        {
+            if (accessories[i] != null && accessories[i].activeInHierarchy)
+                return i;
+        }
+
+        return -1;
+    }
+
+    // OBTIENE INDICE DEL OUTFIT ACTIVO
+    private int GetActiveOutfitIndex()
+    {
+        if (outfits == null) return -1;
+
+        // PRIORIZA currentOutfit SI SIGUE ACTIVO
+        if (currentOutfit >= 0 &&
+            currentOutfit < outfits.Length &&
+            outfits[currentOutfit] != null &&
+            outfits[currentOutfit].activeInHierarchy)
+        {
+            return currentOutfit;
+        }
+
+        // SI NO, BUSCA EL PRIMERO ACTIVO
+        for (int i = 0; i < outfits.Length; i++)
+        {
+            if (outfits[i] != null && outfits[i].activeInHierarchy)
+                return i;
+        }
+
+        return -1;
+    }
+
+    // APLICA ANIMACION DE ACCESORIO
     private void ApplyAccessoryAnimation(int accessoryIndex)
     {
         if (characterAnimator == null) return;
         if (accessoryIndex < 0) return;
 
+        // BLOQUEO OPCIONAL: SOLO PERMITIR CAMBIO SI VIENE DE BOTON
         if (waitForButtonToAssignId && !accessoryButtonPressed) return;
 
         characterAnimator.SetInteger(accessoryIdParam, accessoryIndex);
         characterAnimator.SetTrigger(accessoryChangeTrigger);
     }
 
+    // APLICA ANIMACION DE OUTFIT
     private void ApplyOutfitAnimation(int outfitIndex)
     {
         if (characterAnimator == null) return;
         if (outfitIndex < 0) return;
 
+        // BLOQUEO OPCIONAL: SOLO PERMITIR CAMBIO SI VIENE DE BOTON
         if (waitForButtonToAssignOutfitId && !outfitButtonPressed) return;
 
         characterAnimator.SetInteger(outfitIdParam, outfitIndex);
         characterAnimator.SetTrigger(outfitChangeTrigger);
     }
 
+    // FORZAR IDLE (RESET DE TRIGGERS)
     private void ForceIdleAnimation()
     {
         if (characterAnimator == null) return;
@@ -180,8 +319,8 @@ public class CustomizationSystem : MonoBehaviour
             characterAnimator.Play(idleStateName, 0, 0f);
     }
 
-    // Función para apagar todos los accesorios
-    //evita que se generen confusiones o mezclas de accesorios al activar uno nuevo
+    // APAGA TODOS LOS ACCESORIOS
+    // EVITA MEZCLAS / DUPLICADOS VISUALES
     private void DeactivateAllAccessories()
     {
         if (accessories == null) return;
@@ -192,7 +331,8 @@ public class CustomizationSystem : MonoBehaviour
                 accessories[i].SetActive(false);
         }
     }
-    // Función para apagar todos los outfits
+
+    // APAGA TODOS LOS OUTFITS
     private void DeactivateAllOutfits()
     {
         if (outfits == null) return;
@@ -203,7 +343,8 @@ public class CustomizationSystem : MonoBehaviour
                 outfits[i].SetActive(false);
         }
     }
-    // Función para obtener un índice aleatorio diferente al actual Y EVITAR QUE SE ESTANQUE EN UN SOLO ACCESORIO O VESTUARIO 
+
+    // RANDOM DIFERENTE AL ACTUAL (EVITA ESTANCARSE EN UNO SOLO)
     private int GetRandomDifferentIndex(int length, int currentIndex)
     {
         if (length <= 0)
@@ -221,10 +362,12 @@ public class CustomizationSystem : MonoBehaviour
 
         return newIndex;
     }
-    //FUNCION PARA RENDEREAR EL COLOR EN LOS ACCESORIOS P02
+
+    // APLICA COLOR A TODO EL OBJETO (Y SUS HIJOS) QUE TENGAN RENDERER
     private void ApplyColorToObject(GameObject obj, Color newColor)
     {
-        if (obj == null) return;
+        if (obj == null)
+            return;
 
         Renderer[] renderers = obj.GetComponentsInChildren<Renderer>(true);
 
