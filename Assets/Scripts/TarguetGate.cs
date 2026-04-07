@@ -38,6 +38,10 @@ public class TarguetGate : MonoBehaviour
     [Header("Tracking")]
     public bool allowLimitedWhileVisible = false;
 
+    [Header("Visibility Mode")]
+    [Tooltip("Si está activo, NO desactiva el GameObject del personaje; solo apaga/prende sus Renderers para no reiniciar Animator.")]
+    public bool useRendererVisibilityForCharacters = true;
+
     [Header("Debug")]
     public bool debugLogs = true;
     public bool debugOverlay = true;
@@ -51,16 +55,28 @@ public class TarguetGate : MonoBehaviour
     private string lastDecision = "";
     private float lastDecisionTime = 0f;
 
+    // Estado visual actual para NO repetir SetActive / render toggles cada frame
+    private int currentShownIndex = -1;
+    private VisualState currentVisualState = VisualState.None;
+
+    private enum VisualState
+    {
+        None,
+        Content,
+        Wrong,
+        Lost
+    }
+
     private void Awake()
     {
         if (shuffleOnAwake) BuildStorySequence();
-        HideEverything();
+        HideEverythingImmediate();
     }
 
     private void Start()
     {
         if (!shuffleOnAwake) BuildStorySequence();
-        HideEverything();
+        HideEverythingImmediate();
         ValidateSetup();
     }
 
@@ -72,58 +88,57 @@ public class TarguetGate : MonoBehaviour
         int parentedIndex = GetCurrentParentedIndex();
         lastParentedIndex = parentedIndex;
 
-        // 1) Si no hay ningún target detectado, no mostramos contenido.
+        // 1) No hay tracking
         if (trackedIndex < 0)
         {
             lastDecision = "NO TRACKING => HIDE / LOST";
             lastDecisionTime = Time.time;
 
             if (validatedTargets.Count > 0 && lostTrackingUI != null)
-                ShowLost();
+                ShowLostSafe();
             else
-                HideEverything();
+                HideEverythingSafe();
 
             return;
         }
 
-        // 2) Si el target detectado no es donde está parado el personaje principal,
-        //    NO se muestra nada en esa tarjeta.
+        // 2) El target detectado no coincide con donde está parentado el personaje principal
         if (trackedIndex != parentedIndex)
         {
             lastDecision = $"TRACKED={trackedIndex}, PARENTED={parentedIndex} => HIDE";
             lastDecisionTime = Time.time;
-            HideEverything();
+            HideEverythingSafe();
             return;
         }
 
-        // 3) Si ya fue validado y el personaje sigue parado ahí,
-        //    sí puede volver a verse su contenido.
+        // 3) Si ya fue validado y sigue ahí, vuelve a mostrar su contenido
         if (validatedTargets.Contains(trackedIndex))
         {
             lastDecision = $"TRACKED={trackedIndex}, PARENTED={parentedIndex}, VALIDATED => SHOW CONTENT";
             lastDecisionTime = Time.time;
-            ShowContentForIndex(trackedIndex);
+            ShowContentForIndexSafe(trackedIndex);
             return;
         }
 
-        // 4) Si el personaje sí está parado ahí, revisamos si es el siguiente correcto.
+        // 4) Si el personaje sí está ahí, revisamos si es el target esperado
         int expectedTargetIndex = GetExpectedTargetIndex();
 
         if (trackedIndex != expectedTargetIndex)
         {
             lastDecision = $"TRACKED={trackedIndex}, EXPECTED={expectedTargetIndex}, PARENTED OK => WRONG";
             lastDecisionTime = Time.time;
-            ShowWrong();
+            ShowWrongSafe();
             return;
         }
 
-        // 5) Si sí es el correcto, renderizamos villano + canvas, validamos y avanzamos historia.
+        // 5) Correcto: mostrar, validar y avanzar historia
         lastDecision = $"CORRECT TRACKED={trackedIndex}, EXPECTED={expectedTargetIndex} => SHOW + ADVANCE";
         lastDecisionTime = Time.time;
 
-        ShowContentForIndex(trackedIndex);
+        ShowContentForIndexSafe(trackedIndex);
 
-        validatedTargets.Add(trackedIndex);
+        if (!validatedTargets.Contains(trackedIndex))
+            validatedTargets.Add(trackedIndex);
 
         if (expectedStoryPos < storySequence.Length - 1)
             expectedStoryPos++;
@@ -242,74 +257,194 @@ public class TarguetGate : MonoBehaviour
         return false;
     }
 
-    private void ShowContentForIndex(int index)
-    {
-        SetAllSecondaryAndCluesOff();
+    // =========================
+    // SAFE VISUAL CONTROL
+    // =========================
 
-        EnableForIndex(secondaryCharacterByTarget, index, true);
-        EnableForIndex(clueByTarget, index, true);
+    private void ShowContentForIndexSafe(int index)
+    {
+        if (currentVisualState == VisualState.Content && currentShownIndex == index)
+            return;
+
+        ApplyCharactersVisibility(index);
+        ApplyCluesVisibility(index);
+
+        if (wrongTargetUI != null && wrongTargetUI.activeSelf)
+            wrongTargetUI.SetActive(false);
+
+        if (lostTrackingUI != null && lostTrackingUI.activeSelf)
+            lostTrackingUI.SetActive(false);
+
+        currentShownIndex = index;
+        currentVisualState = VisualState.Content;
+
+        if (debugLogs)
+            Debug.Log($"[SHOW CONTENT SAFE] idx={index}");
+    }
+
+    private void ShowWrongSafe()
+    {
+        if (currentVisualState == VisualState.Wrong)
+            return;
+
+        HideCharactersAndClues();
+
+        if (lostTrackingUI != null && lostTrackingUI.activeSelf)
+            lostTrackingUI.SetActive(false);
+
+        if (wrongTargetUI != null && !wrongTargetUI.activeSelf)
+            wrongTargetUI.SetActive(true);
+
+        currentShownIndex = -1;
+        currentVisualState = VisualState.Wrong;
+
+        if (debugLogs)
+            Debug.Log("[SHOW WRONG SAFE]");
+    }
+
+    private void ShowLostSafe()
+    {
+        if (currentVisualState == VisualState.Lost)
+            return;
+
+        HideCharactersAndClues();
+
+        if (wrongTargetUI != null && wrongTargetUI.activeSelf)
+            wrongTargetUI.SetActive(false);
+
+        if (lostTrackingUI != null && !lostTrackingUI.activeSelf)
+            lostTrackingUI.SetActive(true);
+
+        currentShownIndex = -1;
+        currentVisualState = VisualState.Lost;
+
+        if (debugLogs)
+            Debug.Log("[SHOW LOST SAFE]");
+    }
+
+    private void HideEverythingSafe()
+    {
+        if (currentVisualState == VisualState.None && currentShownIndex == -1)
+            return;
+
+        HideCharactersAndClues();
+
+        if (wrongTargetUI != null && wrongTargetUI.activeSelf)
+            wrongTargetUI.SetActive(false);
+
+        if (lostTrackingUI != null && lostTrackingUI.activeSelf)
+            lostTrackingUI.SetActive(false);
+
+        currentShownIndex = -1;
+        currentVisualState = VisualState.None;
+
+        if (debugLogs)
+            Debug.Log("[HIDE EVERYTHING SAFE]");
+    }
+
+    private void HideEverythingImmediate()
+    {
+        HideCharactersAndClues(true);
 
         if (wrongTargetUI != null) wrongTargetUI.SetActive(false);
         if (lostTrackingUI != null) lostTrackingUI.SetActive(false);
 
-        if (debugLogs)
-            Debug.Log($"[SHOW CONTENT] idx={index}");
+        currentShownIndex = -1;
+        currentVisualState = VisualState.None;
     }
 
-    private void ShowWrong()
+    private void ApplyCharactersVisibility(int visibleIndex)
     {
-        SetAllSecondaryAndCluesOff();
+        if (secondaryCharacterByTarget == null) return;
 
-        if (lostTrackingUI != null) lostTrackingUI.SetActive(false);
-        if (wrongTargetUI != null) wrongTargetUI.SetActive(true);
-
-        if (debugLogs)
-            Debug.Log("[SHOW WRONG]");
-    }
-
-    private void ShowLost()
-    {
-        SetAllSecondaryAndCluesOff();
-
-        if (wrongTargetUI != null) wrongTargetUI.SetActive(false);
-        if (lostTrackingUI != null) lostTrackingUI.SetActive(true);
-
-        if (debugLogs)
-            Debug.Log("[SHOW LOST]");
-    }
-
-    private void HideEverything()
-    {
-        SetAllSecondaryAndCluesOff();
-
-        if (wrongTargetUI != null) wrongTargetUI.SetActive(false);
-        if (lostTrackingUI != null) lostTrackingUI.SetActive(false);
-    }
-
-    private void SetAllSecondaryAndCluesOff()
-    {
-        SetArrayActive(secondaryCharacterByTarget, false);
-        SetArrayActive(clueByTarget, false);
-    }
-
-    private static void SetArrayActive(GameObject[] arr, bool active)
-    {
-        if (arr == null) return;
-
-        for (int i = 0; i < arr.Length; i++)
+        for (int i = 0; i < secondaryCharacterByTarget.Length; i++)
         {
-            if (arr[i] != null)
-                arr[i].SetActive(active);
+            GameObject go = secondaryCharacterByTarget[i];
+            if (go == null) continue;
+
+            bool visible = (i == visibleIndex);
+
+            if (useRendererVisibilityForCharacters)
+                SetCharacterVisibleByRenderer(go, visible);
+            else
+                SetActiveIfNeeded(go, visible);
         }
     }
 
-    private static void EnableForIndex(GameObject[] arr, int index, bool active)
+    private void ApplyCluesVisibility(int visibleIndex)
     {
-        if (arr == null) return;
-        if (index < 0 || index >= arr.Length) return;
+        if (clueByTarget == null) return;
 
-        if (arr[index] != null)
-            arr[index].SetActive(active);
+        for (int i = 0; i < clueByTarget.Length; i++)
+        {
+            GameObject go = clueByTarget[i];
+            if (go == null) continue;
+
+            bool visible = (i == visibleIndex);
+            SetActiveIfNeeded(go, visible);
+        }
+    }
+
+    private void HideCharactersAndClues(bool force = false)
+    {
+        if (secondaryCharacterByTarget != null)
+        {
+            for (int i = 0; i < secondaryCharacterByTarget.Length; i++)
+            {
+                var go = secondaryCharacterByTarget[i];
+                if (go == null) continue;
+
+                if (useRendererVisibilityForCharacters)
+                    SetCharacterVisibleByRenderer(go, false);
+                else if (force)
+                    go.SetActive(false);
+                else
+                    SetActiveIfNeeded(go, false);
+            }
+        }
+
+        if (clueByTarget != null)
+        {
+            for (int i = 0; i < clueByTarget.Length; i++)
+            {
+                var go = clueByTarget[i];
+                if (go == null) continue;
+
+                if (force)
+                    go.SetActive(false);
+                else
+                    SetActiveIfNeeded(go, false);
+            }
+        }
+    }
+
+    private static void SetActiveIfNeeded(GameObject go, bool active)
+    {
+        if (go == null) return;
+        if (go.activeSelf == active) return;
+        go.SetActive(active);
+    }
+
+    private static void SetCharacterVisibleByRenderer(GameObject root, bool visible)
+    {
+        if (root == null) return;
+
+        if (!root.activeSelf)
+            root.SetActive(true);
+
+        var renderers = root.GetComponentsInChildren<Renderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            if (renderers[i] != null)
+                renderers[i].enabled = visible;
+        }
+
+        var canvases = root.GetComponentsInChildren<Canvas>(true);
+        for (int i = 0; i < canvases.Length; i++)
+        {
+            if (canvases[i] != null)
+                canvases[i].enabled = visible;
+        }
     }
 
     private void ValidateSetup()
@@ -319,6 +454,8 @@ public class TarguetGate : MonoBehaviour
         Debug.Log($"[CHECK] imageTargets={(imageTargets != null ? imageTargets.Length : 0)}");
         Debug.Log($"[CHECK] story={string.Join(" -> ", storySequence)}");
         Debug.Log($"[CHECK] expected first={GetExpectedTargetIndex()}");
+        Debug.Log($"[CHECK] secondary={(secondaryCharacterByTarget != null ? secondaryCharacterByTarget.Length : 0)}");
+        Debug.Log($"[CHECK] clues={(clueByTarget != null ? clueByTarget.Length : 0)}");
     }
 
     private void OnGUI()
@@ -333,9 +470,11 @@ public class TarguetGate : MonoBehaviour
         sb.AppendLine($"TrackedIndex: {lastTrackedIndex}");
         sb.AppendLine($"ParentedIndex: {lastParentedIndex}");
         sb.AppendLine($"Validated: [{string.Join(",", validatedTargets)}]");
+        sb.AppendLine($"VisualState: {currentVisualState}");
+        sb.AppendLine($"CurrentShownIndex: {currentShownIndex}");
         sb.AppendLine($"Decision: {lastDecision}");
         sb.AppendLine($"DecisionTime: {lastDecisionTime:0.00}");
 
-        GUI.Box(new Rect(10, 10, 650, 220), sb.ToString());
+        GUI.Box(new Rect(10, 10, 700, 240), sb.ToString());
     }
 }
