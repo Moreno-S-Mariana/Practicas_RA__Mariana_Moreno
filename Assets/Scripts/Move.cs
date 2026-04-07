@@ -1,4 +1,3 @@
-// Assets/Scripts/Move.cs
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -10,6 +9,9 @@ public class Move : MonoBehaviour
     [Header("References")]
     public GameObject model;
     public ObserverBehaviour[] ImageTargets;
+
+    [Header("Story")]
+    public TarguetGate targuetGate;
 
     [Header("State")]
     public int currentTarget = 0;
@@ -59,7 +61,8 @@ public class Move : MonoBehaviour
 
     private void Awake()
     {
-        if (model != null) originalParent = model.transform.parent;
+        if (model != null)
+            originalParent = model.transform.parent;
     }
 
     private void Start()
@@ -78,12 +81,16 @@ public class Move : MonoBehaviour
     private IEnumerator FireArrivedNextFrame(int index)
     {
         yield return null;
-        if (ImageTargets == null || index < 0 || index >= ImageTargets.Length) yield break;
+
+        if (ImageTargets == null || index < 0 || index >= ImageTargets.Length)
+            yield break;
+
         OnArrivedToTarget?.Invoke(ImageTargets[index], index);
     }
 
     /// <summary>
-
+    /// Método viejo: solo alterna entre 0 y 1.
+    /// Úsalo únicamente si de verdad quieres esa lógica.
     /// </summary>
     public void MoveToOtherTarget()
     {
@@ -118,7 +125,8 @@ public class Move : MonoBehaviour
     }
 
     /// <summary>
-    /// Auto-pick (elige el mejor detectado). Útil si tienes más de 2 targets.
+    /// Método viejo: elige automáticamente el target detectado "mejor".
+    /// No conviene para la lógica de historia.
     /// </summary>
     public void MoveToDetectedTarget()
     {
@@ -138,11 +146,22 @@ public class Move : MonoBehaviour
         StartCoroutine(MoveModel(target));
     }
 
+    /// <summary>
+    /// Mueve al target exacto indicado por índice.
+    /// </summary>
     public void MoveToTargetIndex(int index)
     {
-        if (isMoving) return;
-        if (ImageTargets == null || index < 0 || index >= ImageTargets.Length) return;
+        if (isMoving)
+        {
+            OnMoveBlocked?.Invoke("Movimiento en curso.");
+            return;
+        }
 
+        if (ImageTargets == null || index < 0 || index >= ImageTargets.Length)
+        {
+            OnMoveBlocked?.Invoke("Índice de target fuera de rango.");
+            return;
+        }
 
         bool applyPrevBlock = preventReturningToLastTarget && ImageTargets.Length > 2;
 
@@ -168,13 +187,51 @@ public class Move : MonoBehaviour
         StartCoroutine(MoveModel(target));
     }
 
+    /// <summary>
+    /// NUEVO:
+    /// Mueve al target que sigue en la historia definido por TarguetGate.
+    /// </summary>
+    public void MoveToExpectedStoryTarget()
+    {
+        if (isMoving)
+        {
+            OnMoveBlocked?.Invoke("Movimiento en curso.");
+            return;
+        }
+
+        if (targuetGate == null)
+        {
+            OnMoveBlocked?.Invoke("No hay referencia a TarguetGate.");
+            return;
+        }
+
+        int nextIndex = targuetGate.GetExpectedTargetPublic();
+
+        if (nextIndex == currentTarget)
+        {
+            OnMoveBlocked?.Invoke($"Ya estás en el target esperado ({nextIndex}).");
+            return;
+        }
+
+        MoveToTargetIndex(nextIndex);
+    }
+
     public void LockTarget(int index)
     {
         if (index < 0) return;
         lockedTargets.Add(index);
     }
 
-    public bool IsLocked(int index) => lockedTargets.Contains(index);
+    public void UnlockTarget(int index)
+    {
+        if (index < 0) return;
+        lockedTargets.Remove(index);
+    }
+
+    public bool IsLocked(int index)
+    {
+        return lockedTargets.Contains(index);
+    }
 
     private IEnumerator MoveModel(ObserverBehaviour target)
     {
@@ -189,12 +246,18 @@ public class Move : MonoBehaviour
 
         Vector3 lookDir = targetPosition - model.transform.position;
         lookDir.y = 0f;
+
         if (lookDir.sqrMagnitude > 0.0001f)
         {
             Quaternion targetRot = Quaternion.LookRotation(lookDir.normalized, Vector3.up);
+
             while (Quaternion.Angle(model.transform.rotation, targetRot) > 1f)
             {
-                model.transform.rotation = Quaternion.Slerp(model.transform.rotation, targetRot, Time.deltaTime * rotationSpeed);
+                model.transform.rotation = Quaternion.Slerp(
+                    model.transform.rotation,
+                    targetRot,
+                    Time.deltaTime * rotationSpeed
+                );
                 yield return null;
             }
         }
@@ -211,15 +274,22 @@ public class Move : MonoBehaviour
 
             Vector3 dynamicDir = targetPosition - model.transform.position;
             dynamicDir.y = 0f;
+
             if (dynamicDir.sqrMagnitude > 0.0001f)
             {
                 Quaternion rot = Quaternion.LookRotation(dynamicDir.normalized, Vector3.up);
-                model.transform.rotation = Quaternion.Slerp(model.transform.rotation, rot, Time.deltaTime * rotationSpeed);
+                model.transform.rotation = Quaternion.Slerp(
+                    model.transform.rotation,
+                    rot,
+                    Time.deltaTime * rotationSpeed
+                );
             }
 
             model.transform.position = Vector3.Lerp(startPosition, targetPosition, t);
             yield return null;
         }
+
+        model.transform.position = target.transform.position;
 
         if (animator != null && !string.IsNullOrWhiteSpace(movingBool))
             animator.SetBool(movingBool, false);
@@ -246,6 +316,7 @@ public class Move : MonoBehaviour
     private ObserverBehaviour GetBestDetectedTarget(out string reason)
     {
         reason = "No hay targets elegibles detectados.";
+
         if (ImageTargets == null || ImageTargets.Length == 0)
         {
             reason = "ImageTargets vacío.";
@@ -255,13 +326,11 @@ public class Move : MonoBehaviour
         int bestIndex = -1;
         ObserverBehaviour best = null;
 
-
         bool applyPrevBlock = preventReturningToLastTarget && ImageTargets.Length > 2;
 
         for (int i = 0; i < ImageTargets.Length; i++)
         {
             if (i < autoMoveMinTargetIndex) continue;
-
             if (applyPrevBlock && i == lastTargetIndex) continue;
             if (forbidLockedTargets && lockedTargets.Contains(i)) continue;
 
@@ -332,14 +401,20 @@ public class Move : MonoBehaviour
     private int GetTargetIndex(ObserverBehaviour target)
     {
         if (ImageTargets == null) return -1;
+
         for (int i = 0; i < ImageTargets.Length; i++)
-            if (ImageTargets[i] == target) return i;
+        {
+            if (ImageTargets[i] == target)
+                return i;
+        }
+
         return -1;
     }
 
     private void ParentToTarget(ObserverBehaviour target)
     {
         if (model == null || target == null) return;
+
         model.transform.SetParent(target.transform, true);
         currentParentTarget = target;
     }
